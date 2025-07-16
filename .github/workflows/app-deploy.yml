@@ -73,10 +73,3 @@ jobs:
         # Įkelti image į DockerHub registry
         docker push ${{ secrets.DOCKER_USERNAME }}/karalius-app:latest
     
-    # 10. (Papildomas žingsnis) Deploy į EC2 instance
-    - name: Deploy to EC2
-      run: |
-        # Čia galima pridėti SSH komandas deploy'inimui į EC2
-        # Pavyzdžiui: ssh į server'į ir paleisti docker-compose
-        echo "Deployment to EC2 would happen here"
-        # ssh -i key.pem ec2-user@${{ secrets.EC2_HOST }} 'docker-compose up -d'
