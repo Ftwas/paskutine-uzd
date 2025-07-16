@@ -82,9 +82,9 @@ jobs:
         # Paleisti naują konteinerį su port mapping
         docker run -d \
           --name karalius-container \
-          -p 8080:8080 \
+          -p 80:5000 \
           karalius-app:latest
         # Palaukti kol aplikacija pilnai pakraus
         sleep 10
         # Patikrinti ar aplikacija veikia
-        curl -f http://localhost:8080 || echo "Nepavyko pasiekti aplikacijos"
+        curl -f http://localhost:5000 || echo "Nepavyko pasiekti aplikacijos"
