@@ -1,50 +1,82 @@
+# Workflow pavadinimas, kuris bus rodomas GitHub Actions skirtuke
 name: Deploy Application
 
+# Nustato, kada šis workflow bus paleistas
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch:
+    branches: [ main ]      # Paleidžiama tik kai push'inama į main branch
+  workflow_dispatch:        # Leidžia paleisti rankiniu būdu per GitHub UI
 
+# Darbo procesai (jobs) kurie bus vykdomi
 jobs:
   deploy:
+    # Nurodo, kokią OS naudoti GitHub runner'yje
     runs-on: ubuntu-latest
     
+    # Žingsniai (steps) kurie bus vykdomi nuosekliai
     steps:
+    
+    # 1. Atsisiųsti repository kodą į runner'į
     - name: Checkout code
       uses: actions/checkout@v3
     
+    # 2. Sukonfigūruoti Python aplinką
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.9'
+        python-version: '3.9'    # Naudoti Python 3.9 versiją
     
+    # 3. Pereiti į app katalogą ir įdiegti Python dependencies
     - name: Install dependencies
       run: |
-        cd app
-        pip install -r requirements.txt
+        cd app                   # Pereiti į app katalogą
+        pip install -r requirements.txt  # Įdiegti bibliotekas iš requirements.txt
     
+    # 4. Sukonfigūruoti Snyk saugumo skenerį
     - name: Setup Snyk
       uses: snyk/actions/setup@master
     
+    # 5. Vykdyti Snyk dependency skaneavimą saugumui
     - name: Snyk dependency scan
       run: |
-        cd app
-        snyk test --severity-threshold=high
+        cd app                   # Pereiti į app katalogą
+        snyk test --severity-threshold=high  # Tikrinti high ir critical pažeidžiamybes
       env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}  # Snyk API token iš GitHub secrets
     
+    # 6. Vykdyti Snyk kodo skaneavimą
+    - name: Snyk code scan
+      run: |
+        cd app                   # Pereiti į app katalogą
+        snyk code test --severity-threshold=high  # Tikrinti kodo pažeidžiamybes
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}  # Snyk API token
+    
+    # 7. Sukurti Docker image iš aplikacijos
     - name: Build Docker image
       run: |
-        cd app
-        docker build -t karalius-app .
+        cd app                   # Pereiti į app katalogą
+        docker build -t karalius-app .  # Sukurti Docker image su tagu karalius-app
     
+    # 8. Prisijungti prie DockerHub registry
     - name: Login to DockerHub
       uses: docker/login-action@v2
       with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+        username: ${{ secrets.DOCKER_USERNAME }}  # DockerHub username iš secrets
+        password: ${{ secrets.DOCKER_PASSWORD }}  # DockerHub password iš secrets
     
+    # 9. Pakeisti Docker image tag'ą ir įkelti į DockerHub
     - name: Push Docker image
       run: |
+        # Pakeisti tag'ą pridedant DockerHub username
         docker tag karalius-app:latest ${{ secrets.DOCKER_USERNAME }}/karalius-app:latest
+        # Įkelti image į DockerHub registry
         docker push ${{ secrets.DOCKER_USERNAME }}/karalius-app:latest
+    
+    # 10. (Papildomas žingsnis) Deploy į EC2 instance
+    - name: Deploy to EC2
+      run: |
+        # Čia galima pridėti SSH komandas deploy'inimui į EC2
+        # Pavyzdžiui: ssh į server'į ir paleisti docker-compose
+        echo "Deployment to EC2 would happen here"
+        # ssh -i key.pem ec2-user@${{ secrets.EC2_HOST }} 'docker-compose up -d'

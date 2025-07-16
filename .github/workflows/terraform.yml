@@ -1,71 +1,96 @@
+# Workflow pavadinimas, kuris bus rodomas GitHub Actions skirtuke
 name: Terraform CI/CD
 
+# Nustato, kada šis workflow bus paleistas
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ main ]      # Paleidžiama kai sukuriamas PR į main branch
   push:
-    branches: [ main ]
+    branches: [ main ]      # Paleidžiama kai push'inama tiesiai į main branch
 
+# Darbo procesai (jobs) kurie bus vykdomi
 jobs:
+  
+  # PIRMAS JOB: Terraform plano tikrinimas PR metu
   terraform-plan:
+    # Šis job vykdomas tik kai daromas pull request
     if: github.event_name == 'pull_request'
+    # Naudojama Ubuntu operacinė sistema GitHub runner'yje
     runs-on: ubuntu-latest
     
+    # Žingsniai (steps) kurie bus vykdomi nuosekliai
     steps:
+    
+    # 1. Atsisiųsti repository kodą į runner'į
     - name: Checkout code
       uses: actions/checkout@v3
     
+    # 2. Sukonfigūruoti Terraform aplinką
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v2
       with:
-        terraform_version: 1.5.0
+        terraform_version: 1.5.0    # Naudoti Terraform 1.5.0 versiją
     
+    # 3. Sukonfigūruoti AWS credentials prisijungimui prie AWS
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: eu-west-1
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}         # AWS Access Key iš secrets
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }} # AWS Secret Key iš secrets
+        aws-region: eu-west-1                                       # AWS regionas (Europa)
     
+    # 4. Inicializuoti Terraform projektą
     - name: Terraform Init
-      run: terraform init
-      working-directory: .
+      run: terraform init          # Atsisiųsti providers ir sukonfigūruoti backend
+      working-directory: .         # Vykdyti root kataloge
     
+    # 5. Vykdyti Checkov IaC saugumo skaneavimą
     - name: Checkov IaC scan
       uses: bridgecrewio/checkov-action@master
       with:
-        directory: .
-        framework: terraform
-        soft_fail: false
+        directory: .               # Skenuoti root katalogą
+        framework: terraform       # Naudoti Terraform framework
+        soft_fail: false          # Failinti jei randamos saugumo problemos
     
+    # 6. Sukurti Terraform planą (parodyti kas bus keičiama)
     - name: Terraform Plan
-      run: terraform plan -no-color
-      working-directory: .
+      run: terraform plan -no-color    # Sukurti planą be spalvų formatavimo
+      working-directory: .              # Vykdyti root kataloge
 
+  # ANTRAS JOB: Terraform apply (infrastruktūros kūrimas) main branch
   terraform-apply:
+    # Šis job vykdomas tik kai push'inama į main branch
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # Naudojama Ubuntu operacinė sistema GitHub runner'yje
     runs-on: ubuntu-latest
     
+    # Žingsniai (steps) kurie bus vykdomi nuosekliai
     steps:
+    
+    # 1. Atsisiųsti repository kodą į runner'į
     - name: Checkout code
       uses: actions/checkout@v3
     
+    # 2. Sukonfigūruoti Terraform aplinką
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v2
       with:
-        terraform_version: 1.5.0
+        terraform_version: 1.5.0    # Naudoti Terraform 1.5.0 versiją
     
+    # 3. Sukonfigūruoti AWS credentials prisijungimui prie AWS
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: eu-west-1
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}         # AWS Access Key iš secrets
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }} # AWS Secret Key iš secrets
+        aws-region: eu-west-1                                       # AWS regionas (Europa)
     
+    # 4. Inicializuoti Terraform projektą
     - name: Terraform Init
-      run: terraform init
-      working-directory: .
+      run: terraform init          # Atsisiųsti providers ir sukonfigūruoti backend
+      working-directory: .         # Vykdyti root kataloge
     
+    # 5. Pritaikyti Terraform konfigūraciją (sukurti infrastruktūrą)
     - name: Terraform Apply
-      run: terraform apply -auto-approve
-      working-directory: .
+      run: terraform apply -auto-approve   # Pritaikyti pakeitimus be patvirtinimo
+      working-directory: .                 # Vykdyti root kataloge
