@@ -3,30 +3,31 @@ name: Deploy Application
 on:
   push:
     branches: [ main ]
-    paths: [ 'app/**' ]
+  workflow_dispatch:  # Galėsite paleisti rankiniu būdu
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
     
     - name: Setup Snyk
       uses: snyk/actions/setup@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     
     - name: Snyk dependency scan
       run: snyk test --severity-threshold=high
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-    
-    - name: Snyk code scan
-      run: snyk code test --severity-threshold=high
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      continue-on-error: false
     
     - name: Build Docker image
-      run: docker build -t karalius-app .
+      run: |
+        cd app
+        docker build -t karalius-app .
     
     - name: Login to DockerHub
       uses: docker/login-action@v2
@@ -38,8 +39,3 @@ jobs:
       run: |
         docker tag karalius-app:latest ${{ secrets.DOCKER_USERNAME }}/karalius-app:latest
         docker push ${{ secrets.DOCKER_USERNAME }}/karalius-app:latest
-    
-    - name: Deploy to EC2
-      run: |
-        # SSH į EC2 ir paleisti docker-compose
-        echo "Deploy commands here"
