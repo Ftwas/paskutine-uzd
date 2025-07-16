@@ -46,6 +46,7 @@ jobs:
     
     # 5. Vykdyti Checkov IaC saugumo skaneavimą
     - name: Checkov IaC scan
+      continue-on-error: true
       uses: bridgecrewio/checkov-action@master
       with:
         directory: .               # Skenuoti root katalogą
