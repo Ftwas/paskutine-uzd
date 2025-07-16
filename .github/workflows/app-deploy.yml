@@ -3,7 +3,7 @@ name: Deploy Application
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:  # Galėsite paleisti rankiniu būdu
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -13,16 +13,25 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
     
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        cd app
+        pip install -r requirements.txt
+    
     - name: Setup Snyk
       uses: snyk/actions/setup@master
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     
     - name: Snyk dependency scan
-      run: snyk test --severity-threshold=high
+      run: |
+        cd app
+        snyk test --severity-threshold=high
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      continue-on-error: false
     
     - name: Build Docker image
       run: |
