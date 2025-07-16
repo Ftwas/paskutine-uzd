@@ -73,3 +73,18 @@ jobs:
         # Įkelti image į DockerHub registry
         docker push ${{ secrets.DOCKER_USERNAME }}/karalius-app:latest
     
+    # 10. Paleisti Docker konteinerį localhost prieigai
+    - name: Run Docker container
+      run: |
+        # Sustabdyti esamą konteinerį jei toks yra
+        docker stop karalius-container || true
+        docker rm karalius-container || true
+        # Paleisti naują konteinerį su port mapping
+        docker run -d \
+          --name karalius-container \
+          -p 8080:8080 \
+          karalius-app:latest
+        # Palaukti kol aplikacija pilnai pakraus
+        sleep 10
+        # Patikrinti ar aplikacija veikia
+        curl -f http://localhost:8080 || echo "Nepavyko pasiekti aplikacijos"
